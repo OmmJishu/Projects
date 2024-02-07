@@ -10,7 +10,7 @@ struct Task
 
 void displayToDoList(const vector<Task> &toDoList)
 {
-    cout << "To-Do List:" << endl;
+    cout << "\nTo-Do List:" << endl;
     for (size_t i = 0; i < toDoList.size(); i++)
     {
         cout << i + 1 << ". "
@@ -21,7 +21,7 @@ void displayToDoList(const vector<Task> &toDoList)
 int main()
 {
     vector<Task> toDoList;
-    ifstream inFile("tasks.txt");
+    ifstream inFile("tasks2.txt");
 
     if (inFile.is_open())
     {
@@ -40,9 +40,10 @@ int main()
     while (true)
     {
         cout << "\nEnter Options that You want to do :" << endl;
-        cout << "1. Add a task" << endl;
-        cout << "2. View to-do list" << endl;
-        cout << "3. Save and exit" << endl;
+        cout << "1. Add a Task" << endl;
+        cout << "2. Remove a Task" << endl;
+        cout << "3. View to-do list" << endl;
+        cout << "4. Save and exit" << endl;
 
         int choice;
         cin >> choice;
@@ -60,7 +61,7 @@ int main()
                 continue;
             }
 
-            cout << "Enter due date (YYYY-MM-DD): ";
+            cout << "Enter due date (DD-MM-YYYY): ";
             cin >> newTask.dueDate;
             cout << "Enter task priority (1 for low, 2 for medium, 3 for high): ";
             cin >> newTask.priority;
@@ -73,13 +74,80 @@ int main()
 
         else if (choice == 2)
         {
-            sort(toDoList.begin(), toDoList.end(), [](const Task &a, const Task &b)
-                 { return a.priority < b.priority; });
+            cin.ignore(); 
+
             displayToDoList(toDoList);
+
+            cout << "\nEnter the task description to remove : ";
+            string descriptionToRemove;
+            getline(cin, descriptionToRemove);
+
+            // Open the "tasks2.txt" file for both reading and writing
+            ifstream file("tasks2.txt");
+            
+            if (file.is_open())
+            {
+                // Read the existing tasks into a temporary vector
+                vector<Task> tempTasks;
+                Task tempTask;
+
+                while (getline(file, tempTask.description) && getline(file, tempTask.dueDate))
+                {
+                    file >> tempTask.priority;
+                    file.ignore();
+                    tempTasks.push_back(tempTask);
+                }
+                file.close();
+
+                // Search for the task in the temporary vector
+                auto it = find_if(tempTasks.begin(), tempTasks.end(), [&descriptionToRemove](const Task &task){ 
+                    return task.description == descriptionToRemove; 
+                });
+
+                // Check if the task was found
+                if (it != tempTasks.end())
+                {
+                    // Task found, remove it from the temporary vector
+                    tempTasks.erase(it);
+                    cout << "Task removed." << endl;
+
+                    // Write the updated tasks back to the file
+                    fstream file("tasks2.txt");
+                    for (const Task &task : tempTasks)
+                    {
+                        file << task.description << '\n'
+                             << task.dueDate << '\n'
+                             << task.priority << '\n';
+                    }
+
+                    toDoList.swap(tempTasks);
+
+                    file.close();
+                    cout << "File updated." << endl;
+                }
+                else
+                {
+                    // Task not found
+                    cout << "Task not found. Please enter a valid task description." << endl;
+                    file.close();
+                }
+            }
+            else
+            {
+                cout << "Error opening file." << endl;
+            }
         }
+
         else if (choice == 3)
         {
-            ofstream outFile("tasks.txt");
+            sort(toDoList.begin(), toDoList.end(), [](const Task &a, const Task &b)
+                 { return a.priority > b.priority; });
+            displayToDoList(toDoList);
+        }
+
+        else if (choice == 4)
+        {
+            ofstream outFile("tasks2.txt");
             if (outFile.is_open())
             {
                 for (const Task &task : toDoList)
