@@ -59,7 +59,8 @@ int main()
         userFile.close();
     }
     else{
-        cout<<"Error Opening File";
+        ofstream userFile("userAuthentication.txt");
+        cout<<"Please restart the program";
         return 0;
     }
 
