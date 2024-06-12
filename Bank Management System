@@ -1,0 +1,250 @@
+#include<bits/stdc++.h>
+#include<windows.h>
+#include<conio.h>
+using namespace std;
+
+COORD coord = {0,0};
+void gotoxy(int x, int y){
+    coord.X = x;
+    coord.Y = y;
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleCursorPosition(console, coord);
+}
+
+void design(int x){
+    for(int i = 0; i <= x; i++){
+        cout<<" ";
+    }
+}
+
+class Transaction {
+public:
+    string type; // Deposit, Withdraw, Transfer
+    double amount;
+    string date;
+
+    Transaction(string t, double a, string d) : type(t), amount(a), date(d) {}
+};
+
+class Loan {
+public:
+    double loanAmount;
+    double balance;
+    double monthlyPayment;
+    string paymentSchedule;
+
+    Loan(double amount, double balance, double payment, string schedule)
+        : loanAmount(amount), balance(balance), monthlyPayment(payment), paymentSchedule(schedule) {}
+};
+
+class Account {
+private:
+    string bankName;
+    string userName;
+    string userPassword;
+    double balance;
+    vector<Transaction> transactionHistory;
+    Loan* loan;
+
+public:
+    Account(string bank, string name, string password)
+        : bankName(bank), userName(name), userPassword(password), balance(0.0), loan(nullptr) {}
+
+    string getBankName() { return bankName; }
+    string getUserName() { return userName; }
+
+    void viewAccountBalance() {
+        cout << "Current balance for " << userName << " in " << bankName << ": " << balance << endl;
+    }
+
+    void viewTransactionHistory() {
+        cout << "Transaction history for " << userName << " in " << bankName << ":\n";
+        for (const auto& transaction : transactionHistory) {
+            cout << transaction.date << " - " << transaction.type << ": " << transaction.amount << endl;
+        }
+    }
+
+    void deposit(double amount) {
+        balance += amount;
+        transactionHistory.push_back(Transaction("Deposit", amount, getCurrentDate()));
+    }
+
+    bool withdraw(double amount) {
+        if (balance >= amount) {
+            balance -= amount;
+            transactionHistory.push_back(Transaction("Withdraw", amount, getCurrentDate()));
+            return true;
+        } else {
+            cout << "Insufficient balance.\n";
+            return false;
+        }
+    }
+
+    bool transfer(Account& toAccount, double amount) {
+        if (withdraw(amount)) {
+            toAccount.deposit(amount);
+            transactionHistory.push_back(Transaction("Transfer to " + toAccount.getUserName(), amount, getCurrentDate()));
+            toAccount.transactionHistory.push_back(Transaction("Transfer from " + userName, amount, getCurrentDate()));
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void viewLoanBalance() {
+        if (loan) {
+            cout << "Loan balance for " << userName << " in " << bankName << ": " << loan->balance << endl;
+            cout << "Monthly payment: " << loan->monthlyPayment << endl;
+            cout << "Payment schedule: " << loan->paymentSchedule << endl;
+        } else {
+            cout << "No loan found for this account.\n";
+        }
+    }
+
+    void makeLoanPayment(double amount) {
+        if (loan) {
+            if (balance >= amount) {
+                balance -= amount;
+                loan->balance -= amount;
+                transactionHistory.push_back(Transaction("Loan Payment", amount, getCurrentDate()));
+                cout << "Loan payment of " << amount << " made successfully.\n";
+            } else {
+                cout << "Insufficient balance to make loan payment.\n";
+            }
+        } else {
+            cout << "No loan found for this account.\n";
+        }
+    }
+
+    void updatePersonalInfo(string newName, string newPhoneNumber, string newEmail) {
+        userName = newName;
+        cout << "Personal info updated successfully.\n";
+    }
+
+    void changePassword(string newPassword) {
+        userPassword = newPassword;
+        cout << "Password changed successfully.\n";
+    }
+
+    void applyForLoan(double amount, double monthlyPayment, string schedule) {
+        loan = new Loan(amount, amount, monthlyPayment, schedule);
+        cout << "Loan applied successfully.\n";
+    }
+
+    string getCurrentDate() {
+        
+
+        return "2024-06-11";
+    }
+};
+
+class Bank {
+private:
+    string bankName;
+    vector<Account> accounts;
+
+public:
+    Bank(string name) : bankName(name) {}
+
+    void openAccount(string userName, string password) {
+        accounts.emplace_back(bankName, userName, password);
+        cout << "Account opened successfully in " << bankName << " for user " << userName << ".\n";
+    }
+
+    Account* getAccount(string userName) {
+        for (auto& acc : accounts) {
+            if (acc.getUserName() == userName) {
+                return &acc;
+            }
+        }
+        return nullptr;
+    }
+
+    void showAvailableAccounts() {
+        cout << "Accounts available in " << bankName << ":\n";
+        for (auto& acc : accounts) {
+            cout << acc.getUserName() << endl;
+        }
+    }
+};
+
+class User {
+private:
+    vector<Account*> userAccounts;
+
+public:
+    void addAccount(Account* account) {
+        userAccounts.push_back(account);
+    }
+
+    void showMyBanks() {
+        cout << "You have accounts in:\n";
+        for (const auto& acc : userAccounts) {
+            cout << acc->getBankName() << " - " << acc->getUserName() << endl;
+        }
+    }
+
+    Account* findAccount(string bankName) {
+        for (auto& acc : userAccounts) {
+            if (acc->getBankName() == bankName) {
+                return acc;
+            }
+        }
+        return nullptr;
+    }
+
+    void transferBetweenAccounts(string fromBank, string toBank, double amount) {
+        Account* fromAccount = findAccount(fromBank);
+        Account* toAccount = findAccount(toBank);
+        if (fromAccount && toAccount) {
+            if (fromAccount->transfer(*toAccount, amount)) {
+                cout << "Transfer successful.\n";
+            } else {
+                cout << "Transfer failed.\n";
+            }
+        } else {
+            cout << "One or both accounts not found.\n";
+        }
+    }
+};
+
+int main() {
+    system("color f1");
+    gotoxy(20, 4);
+    design(50);
+
+    cout << "Hello World\n\n";
+
+    Bank sbi("SBI");
+    Bank hdfc("HDFC");
+    Bank icici("ICICI");
+    Bank pnb("PNB");
+
+    User user;
+    sbi.openAccount("user1", "password123");
+    hdfc.openAccount("user2", "password123");
+
+    Account* sbiAcc = sbi.getAccount("user1");
+    Account* hdfcAcc = hdfc.getAccount("user2");
+
+    if (sbiAcc) user.addAccount(sbiAcc);
+    if (hdfcAcc) user.addAccount(hdfcAcc);
+
+    sbiAcc->deposit(5000);
+    sbiAcc->viewAccountBalance();
+
+    sbiAcc->withdraw(1000);
+    sbiAcc->viewAccountBalance();
+
+    user.showMyBanks();
+    user.transferBetweenAccounts("SBI", "HDFC", 2000);
+
+    sbiAcc->applyForLoan(10000, 500, "2024-06-11 to 2025-06-11");
+    sbiAcc->viewLoanBalance();
+    sbiAcc->makeLoanPayment(1000);
+    sbiAcc->viewLoanBalance();
+
+    sbiAcc->viewTransactionHistory();
+
+    return 0;
+}
