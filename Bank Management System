@@ -1,24 +1,28 @@
-#include<bits/stdc++.h>
-#include<windows.h>
-#include<conio.h>
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <unordered_set>
+#include <ctime>
+#include <windows.h>
 using namespace std;
 
-COORD coord = {0,0};
-void gotoxy(int x, int y){
+COORD coord = {0, 0};
+
+void gotoxy(int x, int y) {
     coord.X = x;
     coord.Y = y;
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleCursorPosition(console, coord);
 }
 
-void design(int x){
-    for(int i = 0; i <= x; i++){
-        cout<<" ";
+void design(int x) {
+    for (int i = 0; i <= x; i++) {
+        cout << " ";
     }
 }
 
-class Transaction {
-public:
+struct Transaction {
     string type; // Deposit, Withdraw, Transfer
     double amount;
     string date;
@@ -132,9 +136,10 @@ public:
     }
 
     string getCurrentDate() {
-        
-
-        return "2024-06-11";
+        time_t now = time(0);
+        tm* ltm = localtime(&now);
+        string date = to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday);
+        return date;
     }
 };
 
@@ -148,6 +153,9 @@ public:
 
     void openAccount(string userName, string password) {
         accounts.emplace_back(bankName, userName, password);
+        ofstream file(bankName + "_" + userName + ".txt");
+        file << "0"; // Initial balance
+        file.close();
         cout << "Account opened successfully in " << bankName << " for user " << userName << ".\n";
     }
 
@@ -160,11 +168,13 @@ public:
         return nullptr;
     }
 
-    void showAvailableAccounts() {
-        cout << "Accounts available in " << bankName << ":\n";
-        for (auto& acc : accounts) {
-            cout << acc.getUserName() << endl;
-        }
+    bool authenticateUser(string userName, string password) {
+        ifstream file(bankName + "_" + userName + ".txt");
+        if (!file.is_open()) return false;
+        string storedPassword;
+        file >> storedPassword;
+        file.close();
+        return storedPassword == password;
     }
 };
 
@@ -213,7 +223,7 @@ int main() {
     gotoxy(20, 4);
     design(50);
 
-    cout << "Hello World\n\n";
+    cout << "Welcome to Bank Management System\n\n";
 
     Bank sbi("SBI");
     Bank hdfc("HDFC");
@@ -221,30 +231,95 @@ int main() {
     Bank pnb("PNB");
 
     User user;
-    sbi.openAccount("user1", "password123");
-    hdfc.openAccount("user2", "password123");
 
-    Account* sbiAcc = sbi.getAccount("user1");
-    Account* hdfcAcc = hdfc.getAccount("user2");
+    while (true) {
+        cout << "Enter your choice:\n";
+        cout << "1. Open an account\n";
+        cout << "2. Log in\n";
+        cout << "3. Exit\n";
 
-    if (sbiAcc) user.addAccount(sbiAcc);
-    if (hdfcAcc) user.addAccount(hdfcAcc);
+        int choice;
+        cin >> choice;
 
-    sbiAcc->deposit(5000);
-    sbiAcc->viewAccountBalance();
+        if (choice == 1) {
+            cout << "Enter bank name: ";
+            string bankName;
+            cin >> bankName;
 
-    sbiAcc->withdraw(1000);
-    sbiAcc->viewAccountBalance();
+            cout << "Enter user name: ";
+            string userName;
+            cin >> userName;
 
-    user.showMyBanks();
-    user.transferBetweenAccounts("SBI", "HDFC", 2000);
+            cout << "Enter password: ";
+            string password;
+            cin >> password;
 
-    sbiAcc->applyForLoan(10000, 500, "2024-06-11 to 2025-06-11");
-    sbiAcc->viewLoanBalance();
-    sbiAcc->makeLoanPayment(1000);
-    sbiAcc->viewLoanBalance();
+            if (bankName == "SBI") {
+                sbi.openAccount(userName, password);
+                Account* acc = sbi.getAccount(userName);
+                if (acc) user.addAccount(acc);
+            } else if (bankName == "HDFC") {
+                hdfc.openAccount(userName, password);
+                Account* acc = hdfc.getAccount(userName);
+                if (acc) user.addAccount(acc);
+            } else if (bankName == "ICICI") {
+                icici.openAccount(userName, password);
+                Account* acc = icici.getAccount(userName);
+                if (acc) user.addAccount(acc);
+            } else if (bankName == "PNB") {
+                pnb.openAccount(userName, password);
+                Account* acc = pnb.getAccount(userName);
+                if (acc) user.addAccount(acc);
+            } else {
+                cout << "Invalid bank name.\n";
+            }
+        } else if (choice == 2) {
+            cout << "Enter bank name: ";
+            string bankName;
+            cin >> bankName;
 
-    sbiAcc->viewTransactionHistory();
+            cout << "Enter user name: ";
+            string userName;
+            cin >> userName;
+
+            cout << "Enter password: ";
+            string password;
+            cin >> password;
+
+            Account* acc = nullptr;
+            if (bankName == "SBI") {
+                if (sbi.authenticateUser(userName, password)) {
+                    acc = sbi.getAccount(userName);
+                }
+            } else if (bankName == "HDFC") {
+                if (hdfc.authenticateUser(userName, password)) {
+                    acc = hdfc.getAccount(userName);
+                }
+            } else if (bankName == "ICICI") {
+                if (icici.authenticateUser(userName, password)) {
+                    acc = icici.getAccount(userName);
+                }
+            } else if (bankName == "PNB") {
+                if (pnb.authenticateUser(userName, password)) {
+                    acc = pnb.getAccount(userName);
+                }
+            } else {
+                cout << "Invalid bank name.\n";
+            }
+
+            if (acc) {
+                user.addAccount(acc);
+                cout << "Login successful.\n";
+            } else {
+                cout << "Login failed.\n";
+            }
+        } else if (choice == 3) {
+            cout << "Exiting...\n";
+            break;
+        } else {
+            cout << "Invalid choice.\n";
+        }
+    }
 
     return 0;
 }
